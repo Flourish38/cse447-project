@@ -4,7 +4,7 @@ import string
 import random
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
-from src.SimpleNgramModel import SimpleNgramModel
+from SimpleNgramModel import SimpleNgramModel
 
 
 class MyModel:
