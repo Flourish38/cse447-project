@@ -69,7 +69,7 @@ class SimpleNgramModel:
 
     def save(self, work_dir):
         with open(os.path.join(work_dir, 'ngrams.pickle'), 'wb') as f:
-            pickle.dump(self.ngrams, f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.ngrams, f, protocol=2)
 
     @classmethod
     def load(cls, work_dir):
