@@ -95,10 +95,10 @@ class MyModel:
         y = y[-2] # get mask token
         allowed_ids, complete_ids = self.find_allowed_ids(head, target)
         allowed = torch.tensor(allowed_ids).to(device)
-        actual_logits = y[allowed]
-        probs = nn.Softmax()(actual_logits)
+        probs = nn.Softmax(dim=-1)(y)[allowed]
         
         results = {}
+        
         complete_index = len(target) - len(head) + (2 if len(head) else 0)
         for i, (complete_id, complete_token) in enumerate(zip(complete_ids, tokenizer.convert_ids_to_tokens(complete_ids))):
             char = complete_token[complete_index]
@@ -111,10 +111,11 @@ class MyModel:
             next_head = allowed_token
             if head:
                 next_head = tokenizer.convert_tokens_to_string([head, allowed_token])
-            child_results = self.foo(pretext, next_head, target, space)
-            results = combine_probs(results, child_results, probs[i])
-            
-        return results
+            child_results, child_total = self.foo(pretext, next_head, target, space)
+            results = combine_probs(results, child_results, probs[i] * child_total)
+        
+        total = sum((v for _, v in results.items()))
+        return {k: v/total for k, v in results.items()}, total
 
     @classmethod
     def load_training_data(cls):
@@ -151,7 +152,7 @@ class MyModel:
             inp = inp.strip()
             pretext, target = ' '.join(inp.split()[:-1]), inp.split()[-1]
             target = ''.join([c for c in target if c in self.seen_chars])
-            result = self.foo(pretext, '', target)
+            result = self.foo(pretext, '', target)[0]
             guesses = []
             for _ in range(3):
                 guesses.append(pop_best(result))
@@ -175,10 +176,11 @@ class MyModel:
 
 if __name__ == '__main__':
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument('mode', choices=('train', 'test'), help='what to run')
+    parser.add_argument('mode', choices=('train', 'test', 'eval'), help='what to run')
     parser.add_argument('--work_dir', help='where to save', default='work')
     parser.add_argument('--test_data', help='path to test data', default='example/input.txt')
     parser.add_argument('--test_output', help='path to write test predictions', default='pred.txt')
+    parser.add_argument('--test_answer', help='path to test data answers', default='example/answer.txt')
     args = parser.parse_args()
 
     random.seed(0)
@@ -205,5 +207,16 @@ if __name__ == '__main__':
         print('Writing predictions to {}'.format(args.test_output))
         assert len(pred) == len(test_data), 'Expected {} predictions but got {}'.format(len(test_data), len(pred))
         model.write_pred(pred, args.test_output)
+    elif args.mode == 'eval':
+        print('Evaluating predictions...')
+        correct = 0
+        total = 0
+        with open(args.test_output) as output:
+            with open(args.test_answer) as answer:
+                for pred, ans in zip(output, answer):
+                    if (ans.strip() in pred.strip()):
+                        correct += 1
+                    total += 1
+        print(f'Correct/Total {correct}/{total} = {correct/ total * 100}%')
     else:
         raise NotImplementedError('Unknown mode {}'.format(args.mode))
