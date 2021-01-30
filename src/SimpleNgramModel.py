@@ -13,7 +13,8 @@ class SimpleNgramModel:
     @classmethod
     def load_training_data(cls):
         data = []
-        for fname in glob.glob('../train/*'):
+        for fname in glob.glob('./train/*.txt'):
+            print('Training on', fname)
             with open(fname) as f:
                 for line in f:
                     data.append(line[:-1].lower())
