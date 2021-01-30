@@ -4,6 +4,8 @@ import string
 import random
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
+from src.SimpleNgramModel import SimpleNgramModel
+
 
 class MyModel:
     """
@@ -76,7 +78,7 @@ if __name__ == '__main__':
             print('Making working directory {}'.format(args.work_dir))
             os.makedirs(args.work_dir)
         print('Instatiating model')
-        model = MyModel()
+        model = SimpleNgramModel()
         print('Loading training data')
         train_data = MyModel.load_training_data()
         print('Training')
