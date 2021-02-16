@@ -96,6 +96,7 @@ class MyModel:
         allowed_ids, complete_ids = self.find_allowed_ids(head, target)
         allowed = torch.tensor(allowed_ids).to(device)
         probs = nn.Softmax(dim=-1)(y)[allowed]
+        probs_est = probs.sum().item()
         
         results = {}
         
@@ -107,6 +108,8 @@ class MyModel:
         for i, (allowed_id, allowed_token) in enumerate(zip(allowed_ids, tokenizer.convert_ids_to_tokens(allowed_ids))):
             if i < len(complete_ids):
                 # skip since it's already processed
+                continue    
+            if probs[i] < 1e-6 * probs_est:
                 continue
             next_head = allowed_token
             if head:
