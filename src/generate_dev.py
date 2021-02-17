@@ -13,7 +13,7 @@ def iterate_lines(root):
         with open(filename) as file:
             print(filename)
             for line in file:
-                line = line[:-1]
+                line = line.strip()
                 if len(line) == 0:
                     continue
                 yield line

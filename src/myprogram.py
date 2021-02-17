@@ -8,19 +8,22 @@ import json
 from allennlp.data import Vocabulary
 from allennlp.data.dataset_readers import DatasetReader
 from allennlp.models import Model
+from allennlp.common import Params
 
 from CustomLM import *
 
+import tqdm
 import torch
 
 class LMModel:
     def __init__(self, model_path, batch_size=64):
-        self.vocab = Vocabulary.from_files(model_path)
+        self.vocab = Vocabulary.from_files(os.path.join(model_path, 'vocabulary'))
         cuda_device = 0 if torch.cuda.is_available() else -1
         with open(os.path.join(model_path, 'config.json')) as config_file:
-            config = json.load(config_file)
+            config = Params(json.load(config_file))
         self.model = Model.load(config, model_path, cuda_device = cuda_device)
-        self.pred = MyPredictor(model, TextReader('.', truncate_last_in=False, include_labels=False))
+        self.model.only_last = True
+        self.pred = MyPredictor(self.model, TextReader('.', truncate_last_in=False, include_labels=False))
         self.batch = []
         self.batch_size = batch_size
         # Maps index of sentence to string answer
@@ -28,7 +31,7 @@ class LMModel:
     
     def queue(self, idx, sentence):
         self.batch.append((idx, sentence))
-        if len(self.batch) >= batch_size:
+        if len(self.batch) >= self.batch_size:
             self.flush()
     
     def flush(self):
@@ -37,7 +40,7 @@ class LMModel:
         idxs, sentences = zip(*self.batch)
         outputs = self.pred.predict_batch(sentences)
         for idx, output in zip(idxs, outputs):
-            pairs = [(self.vocab.get_token_from_index(token_id, 'labels'), prob) for token_id, prob in enumerate(output['probs'][-1])]
+            pairs = [(self.vocab.get_token_from_index(token_id, 'labels'), prob) for token_id, prob in enumerate(output['probs'])]
             lower_pairs = {}
             for char, prob in pairs:
                 if len(char) > 1:
@@ -89,7 +92,7 @@ class MyModel:
         # your code here
         preds = []
         all_chars = string.ascii_letters
-        for idx, inp in enumerate(data):
+        for idx, inp in enumerate(tqdm.tqdm(data)):
             # this model just predicts a random character each time
             #top_guesses = [random.choice(all_chars) for _ in range(3)]
             #preds.append(''.join(top_guesses))

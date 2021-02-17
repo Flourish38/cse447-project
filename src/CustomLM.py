@@ -92,6 +92,7 @@ class CustomLM(Model):
         self.vocab_size = vocab.get_vocab_size('labels')
         self.classifier = torch.nn.Linear(encoder.get_output_dim(), self.vocab_size)
         self.perplexity = Perplexity()
+        self.only_last = False
     def forward(self, text: TextFieldTensors, labels: TextFieldTensors = None) -> Dict[str, torch.Tensor]:
         # Shape: (batch_size, num_tokens, embedding_dim)
         embedded_text = self.embedder(text)
@@ -99,6 +100,10 @@ class CustomLM(Model):
         mask = util.get_text_field_mask(text)
         # Shape: (batch_size, num_tokens, encoding_dim)
         encoded_text = self.encoder(embedded_text, mask)
+        if self.only_last:
+            #encoded_text = torch.gather(encoded_text, 1, torch.sum(mask, axis=-1) - 1)
+            last_index = torch.sum(mask, axis=-1) - 1
+            encoded_text = encoded_text[torch.arange(len(encoded_text)), last_index, :]
         # Shape: (batch_size, num_tokens, vocab_size)
         logits = self.classifier(encoded_text)
         # Shape: (batch_size, num_tokens, vocab_size)
@@ -124,7 +129,7 @@ class MyPredictor(Predictor):
         return self.predict_json({'sentence': sentence})
     
     def predict_batch(self, sentences):
-        return self.predict_batch_json([{'sentence': sentence for sentence in sentences}])
+        return self.predict_batch_json([{'sentence': sentence} for sentence in sentences])
     
     def _json_to_instance(self, json_dict):
         sentence = json_dict["sentence"]
