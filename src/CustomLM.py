@@ -42,7 +42,7 @@ import numpy as np
 
 START_TOKEN = "@@START@@"
 
-@DatasetReader.register("my-data")
+@DatasetReader.register("my_data")
 class TextReader(DatasetReader):
     def __init__(self, data_root: str, tokenizer_in: Tokenizer = None, tokenizer_out: Tokenizer = None, 
                  token_indexer_in = None, token_indexer_out = None, 
@@ -123,6 +123,15 @@ class MyPredictor(Predictor):
     def predict(self, sentence):
         return self.predict_json({'sentence': sentence})
     
+    def predict_batch(self, sentences):
+        return self.predict_batch_json([{'sentence': sentence for sentence in sentences}])
+    
     def _json_to_instance(self, json_dict):
         sentence = json_dict["sentence"]
         return self._dataset_reader.text_to_instance(sentence)
+    
+    def predict_batch_instance(self, instances):
+        for instance in instances:
+            self._dataset_reader.apply_token_indexers(instance)
+        outputs = self._model.forward_on_instances(instances)
+        return outputs
