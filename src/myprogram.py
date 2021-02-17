@@ -20,7 +20,7 @@ class LMModel:
         with open(os.path.join(model_path, 'config.json')) as config_file:
             config = json.load(config_file)
         self.model = Model.load(config, model_path, cuda_device = cuda_device)
-        self.pred = MyPredictor(model, TextReader(truncate_last_in=False, include_labels=False))
+        self.pred = MyPredictor(model, TextReader('.', truncate_last_in=False, include_labels=False))
         self.batch = []
         self.batch_size = batch_size
         # Maps index of sentence to string answer
@@ -40,7 +40,9 @@ class LMModel:
             pairs = [(self.vocab.get_token_from_index(token_id, 'labels'), prob) for token_id, prob in enumerate(output['probs'][-1])]
             lower_pairs = {}
             for char, prob in pairs:
-                char = char.lower()
+                if len(char) > 1:
+                    continue
+                char = char.lower()[0]
                 lower_pairs[char] = lower_pairs.get(char, 0) + prob
             pairs = list(lower_pairs.items())
             pairs.sort(key=lambda x: x[1], reverse=True)

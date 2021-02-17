@@ -1,4 +1,7 @@
 {
+    "distributed": {
+        "cuda_devices": [0, 1]
+    },
     "datasets_for_vocab_creation": ["train"],
     "dataset_reader": {
         "type": "my_data",
@@ -22,7 +25,7 @@
         }
     },
     "data_loader": {
-        "batch_size": 8,
+        "batch_size": 16,
         "shuffle": true
     },
     "trainer": {
