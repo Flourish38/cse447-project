@@ -7,17 +7,26 @@ import glob
 
 import numpy as np
 
+
+def iterate_lines_over_file(filename):
+    with open(filename) as file:
+        print(filename)
+        for line in file:
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            yield line
+
+
 def iterate_lines(root):
-    filenames = glob.glob(os.path.join(root, '**/*'), recursive=True)
+    filenames = [root]
+    if os.path.isdir(root):
+        filenames = glob.glob(os.path.join(root, '**/*'), recursive=True)
+
     for filename in filenames:
-        with open(filename) as file:
-            print(filename)
-            for line in file:
-                line = line.strip()
-                if len(line) == 0:
-                    continue
-                yield line
-                
+        for val in iterate_lines_over_file(filename):
+            yield val
+
 
 if __name__ == '__main__':
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
@@ -34,7 +43,7 @@ if __name__ == '__main__':
         allowed = set(np.random.choice(count, args.num, replace=False))
 
     with open(os.path.join(args.out_dir, 'input.txt'), 'w+') as input_file, \
-        open(os.path.join(args.out_dir, 'answer.txt'), 'w+') as ans_file:
+            open(os.path.join(args.out_dir, 'answer.txt'), 'w+') as ans_file:
         for i, line in enumerate(iterate_lines(args.dev_dir)):
             if allowed is not None and i not in allowed:
                 continue
@@ -42,6 +51,3 @@ if __name__ == '__main__':
             line = line[:keep]
             input_file.write(line[:-1] + '\n')
             ans_file.write(line[-1] + '\n')
-            
-        
-    

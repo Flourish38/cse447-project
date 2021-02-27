@@ -5,6 +5,7 @@ from collections import Counter, defaultdict
 import random
 import nltk
 
+
 class SimpleNgramModel:
     """
     Uses character-level ngrams. Super simple and bad and incomplete
@@ -63,6 +64,42 @@ class SimpleNgramModel:
                 top_guesses.add('a')
 
             top_guesses = random.sample(list(top_guesses), 3)
+
+            preds.append(''.join(top_guesses))
+        return preds
+
+    @classmethod
+    def train_and_test(cls, data, common_chars):
+        """Trains 2-3-4-gram model on the test data then makes predictions"""
+
+        ngrams = [defaultdict(Counter) for _ in range(3)]
+        for line in data:
+            line = ' ' + line
+            for n in range(len(ngrams)):
+                line = ' ' + line
+                for ng in nltk.ngrams(line, n + 2):
+                    ngrams[n][ng[:-1]][ng[-1]] += 1
+
+        preds = []
+        for inp in data:
+            top_guesses = set()
+
+            inp = ' ' + inp.lower()
+            for x in range(len(ngrams)):
+                inp = ' ' + inp  # leftpad with spaces
+                hist = tuple(inp[i] for i in range(len(inp) - x - 1, len(inp)))
+                val = ngrams[x][hist].most_common(1)
+
+                if len(val) and val[0][1] > 1:
+                    top_guesses.add(val[0][0])
+
+            # add some common characters
+            if len(top_guesses) < 3:
+                top_guesses.add(common_chars[0])
+            if len(top_guesses) < 3:
+                top_guesses.add(common_chars[1])
+            if len(top_guesses) < 3:
+                top_guesses.add(common_chars[2])
 
             preds.append(''.join(top_guesses))
         return preds
