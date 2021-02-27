@@ -63,7 +63,7 @@ class TextReader(DatasetReader):
         tokens_in = self.tokenizer_in.tokenize(text)
         if self.truncate_last_in:
             tokens_in = tokens_in[:-1]
-        tokens_out = self.tokenizer_out.tokenize(text)
+        tokens_out = self.tokenizer_out.tokenize(text.lower())
         if self.max_tokens:
             tokens_in = tokens_in[: self.max_tokens]
             tokens_out = tokens_out[: self.max_tokens]
