@@ -14,7 +14,7 @@ def iterate_lines(root):
             print(filename)
             for line in file:
                 line = line.strip()
-                if len(line) == 0:
+                if len(line) < 2:
                     continue
                 yield line
                 
@@ -38,7 +38,7 @@ if __name__ == '__main__':
         for i, line in enumerate(iterate_lines(args.dev_dir)):
             if allowed is not None and i not in allowed:
                 continue
-            keep = random.randint(1, len(line))
+            keep = random.randint(2, len(line))
             line = line[:keep]
             input_file.write(line[:-1] + '\n')
             ans_file.write(line[-1] + '\n')

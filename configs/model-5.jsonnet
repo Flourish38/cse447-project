@@ -29,7 +29,7 @@
         }
     },
     "data_loader": {
-        "batch_size": 32,
+        "batch_size": 8,
         "shuffle": true
     },
     "trainer": {
