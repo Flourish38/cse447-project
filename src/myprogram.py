@@ -15,6 +15,33 @@ from CustomLM import *
 import tqdm
 import torch
 
+
+from PrefixTrie import PrefixTrie
+
+USE_PREFIX_MATCH = True
+
+def ensemble_test(data, ngramModel):
+    preds = []
+    unknown_indices = range(len(data))
+
+    if USE_PREFIX_MATCH:
+        prefix_matcher = PrefixTrie()
+        preds, unknown_indices, data = prefix_matcher.run_pred(data)
+
+    ngram_preds = ngramModel.run_pred(data)
+    assert len(ngram_preds) == len(data), 'Expected {} predictions but got {}'.format(len(data), len(ngram_preds))
+
+    # TODO: add in other models here
+
+    if USE_PREFIX_MATCH:
+        # add in those predictions into preds
+        for i in range(len(unknown_indices)):
+            preds[unknown_indices[i]] = ngram_preds[i]
+    else:
+        preds = ngram_preds
+
+    return preds
+
 class LMModel:
     def __init__(self, model_path, batch_size=64):
         self.vocab = Vocabulary.from_files(os.path.join(model_path, 'vocabulary'))
@@ -95,15 +122,20 @@ class MyModel:
         pass
 
     def run_pred(self, data):
-        # your code here
-        preds = []
-        all_chars = string.ascii_letters
+        # PREFIX MATCHER
+        unknown_indices = range(len(data))
+
+        if USE_PREFIX_MATCH:
+            prefix_matcher = PrefixTrie()
+            preds, unknown_indices, _ = prefix_matcher.run_pred(data)
+            unknown_indices = set(unknown_indices)
+        else:
+            preds = [''] * len(data)
+            unknown_indices = set()
+
         for idx, inp in enumerate(tqdm.tqdm(data)):
-            # this model just predicts a random character each time
-            #top_guesses = [random.choice(all_chars) for _ in range(3)]
-            #preds.append(''.join(top_guesses))
-            self.lm_model.queue(idx, inp)
-            preds.append('')
+            if idx in unknown_indices:
+                self.lm_model.queue(idx, inp)
         self.lm_model.flush()
         for idx, ans in self.lm_model.results:
             preds[idx] = ans
@@ -121,7 +153,6 @@ class MyModel:
         # this particular model has nothing to load, but for demonstration purposes we will load a blank file
         return MyModel(LMModel(work_dir))
 
-
 if __name__ == '__main__':
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('mode', choices=('train', 'test'), help='what to run')
@@ -137,19 +168,21 @@ if __name__ == '__main__':
             print('Making working directory {}'.format(args.work_dir))
             os.makedirs(args.work_dir)
         print('Instatiating model')
-        model = MyModel()
+        model = SimpleNgramModel()
         print('Loading training data')
-        train_data = MyModel.load_training_data()
+        train_data = SimpleNgramModel.load_training_data()
         print('Training')
         model.run_train(train_data, args.work_dir)
         print('Saving model')
         model.save(args.work_dir)
     elif args.mode == 'test':
+
         print('Loading model')
         model = MyModel.load(args.work_dir)
         print('Loading test data from {}'.format(args.test_data))
         test_data = MyModel.load_test_data(args.test_data)
         print('Making predictions')
+        # TODO
         pred = model.run_pred(test_data)
         print('Writing predictions to {}'.format(args.test_output))
         assert len(pred) == len(test_data), 'Expected {} predictions but got {}'.format(len(test_data), len(pred))

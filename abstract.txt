@@ -1,0 +1,27 @@
+Datasets:
+
+We plan to use multilingual Wikipedia data, supplemented with transcripts from real astronaut missions (English and Russian), as well as other conversational/speech based datasets, including multilingual TED talk transcripts. We'll also use existing machine translation systems to transform monolingual data into multilingual data, to provide good language coverage.
+
+We plan to download all this data from publicly available online sources. Links:
+- https://dumps.wikimedia.org
+  - Wikipedia in many languages
+- https://huggingface.co/datasets/mlsum
+  - MLSUM dataset contains multilingual data from newspapers
+- http://opus.nlpl.eu/opus-100.php
+  - OPUS-100 contains 100 pairs of English/other language datasets
+- https://www.tensorflow.org/datasets/catalog/ted_multi_translate
+  - 60+ language data set from TED Talk transcripts
+- https://www.hq.nasa.gov/alsj/a11/a11transcript_tec.html
+  - Apollo 11 mission transcript (English, small dataset)
+
+Method:
+
+We plan to try an ensemble of methods. We'll train various autoregressive language models on a concatenation of all the datasets, weighting datasets as necessary. We're only planning to use Python.
+
+Method 1 - We train a Vanilla character-level n-gram based model using the NLTK library and basic Python.
+
+Method 2 - We train a character-level RNN left-to-right language model using Pytorch and AllenNLP.
+
+Method 3 - We repurpose an existing non-left-to-right pre-trained neural multilingual language model, such as mBERT, to predict the next token, conditioned on the fact that the next token must be prefixed with last partially-typed word, and summing the probabilities of a given character across all tokens. We'll use Pytorch/Huggingface to obtain this neural model.
+
+We'll weight the scores from these methods in the ensemble and we may try dropping some of these methods if they don't work.
