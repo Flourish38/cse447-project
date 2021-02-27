@@ -20,6 +20,7 @@ import torch
 from PrefixTrie import PrefixTrie
 
 USE_PREFIX_MATCH = True
+CONF_THRESHOLD = 0.05
 
 print('Torch cuda available:', torch.cuda.is_available())
 
@@ -39,6 +40,9 @@ class LMModel:
         self.results = []
 
         self.bad_for_pred = [idx for token, idx in self.vocab.get_token_to_index_vocabulary('labels').items() if len(token) > 1]
+
+        self.total_conf = 0
+        self.total = 0
 
     def queue(self, idx, sentence):
         self.batch.append((idx, sentence))
@@ -66,7 +70,12 @@ class LMModel:
             pairs.sort(key=lambda x: x[1], reverse=True)
             ans = ''.join([char for char, _ in pairs[:3]])
             self.results.append((idx, ans))
+            self.total += sum((prob for _, prob in pairs[:3]))
+        self.total += len(self.batch)
         self.batch = []
+    
+    def get_avg_conf(self):
+        return self.total_conf / self.total
 
 
 class Ensemble:
@@ -111,6 +120,9 @@ class Ensemble:
             if idx in unknown_indices:
                 self.lm_model.queue(idx, inp)
         self.lm_model.flush()
+        if self.lm_model.get_avg_conf() < CONF_THRESHOLD:
+            pass
+            # TODO model has low confidence
         for idx, ans in self.lm_model.results:
             preds[idx] = ans
         return preds
