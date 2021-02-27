@@ -21,8 +21,8 @@ def iterate_lines(root):
 
 if __name__ == '__main__':
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--dev_dir', required=True)
-    parser.add_argument('--out_dir', required=True)
+    parser.add_argument('dev_dir')
+    parser.add_argument('out_dir')
     parser.add_argument('--num', default=-1, type=int)
 
     args = parser.parse_args()

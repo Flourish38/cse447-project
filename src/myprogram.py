@@ -28,6 +28,8 @@ class LMModel:
         self.batch_size = batch_size
         # Maps index of sentence to string answer
         self.results = []
+
+        self.bad_for_pred = [idx for token, idx in self.vocab.get_token_to_index_vocabulary('labels').items() if len(token) > 1]
     
     def queue(self, idx, sentence):
         self.batch.append((idx, sentence))
@@ -40,11 +42,15 @@ class LMModel:
         idxs, sentences = zip(*self.batch)
         outputs = self.pred.predict_batch(sentences)
         for idx, output in zip(idxs, outputs):
-            pairs = [(self.vocab.get_token_from_index(token_id, 'labels'), prob) for token_id, prob in enumerate(output['probs'])]
+            probs = output['probs']
+            probs[self.bad_for_pred] = -1
+            pairs = [(self.vocab.get_token_from_index(token_id, 'labels'), probs[token_id]) for token_id in probs.argpartition(-10)[-10:]]
+            #pairs = [(self.vocab.get_token_from_index(token_id, 'labels'), prob) for token_id, prob in enumerate(output['probs'])]
             lower_pairs = {}
             for char, prob in pairs:
-                if len(char) > 1:
-                    continue
+                #if len(char) > 1:
+                #    continue
+                assert len(char) == 1
                 char = char.lower()[0]
                 lower_pairs[char] = lower_pairs.get(char, 0) + prob
             pairs = list(lower_pairs.items())

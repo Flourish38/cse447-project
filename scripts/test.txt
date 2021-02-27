@@ -1,0 +1,13 @@
+        "shuffle": true
+    },
+    "trainer": {
+        "optimizer": "adam",
+        "num_epochs": 11,
+        "validation_metric": "-perplexity"
+    },
+    "validation_data_path": "dev_down",
+    "validation_data_loader": {
+        "batch_size": 8,
+        "shuffle": false
+    }
+}
