@@ -8,8 +8,13 @@ mkdir -p $OUT
 
 docker build -t cse447-proj/demo -f Dockerfile .
 
+# Debugging allennlp's docker image
+# echo "Finished building!"
+# docker run --rm --gpus all -v $PWD/.allennlp:/root/.allennlp cse447-proj/demo test-install
+# echo "Finished test install!"
+
 function run() {
-  docker run --rm \
+  docker run --gpus all --rm \
     -v $PWD/src:/job/src \
     -v $PWD/work:/job/work \
     -v $DATA:/job/data \
