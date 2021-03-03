@@ -31,6 +31,12 @@ from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.training.trainer import GradientDescentTrainer, Trainer
 from allennlp.training.optimizers import AdamOptimizer
 
+from overrides import overrides
+
+from allennlp.data.tokenizers.token_class import Token
+from allennlp.data.tokenizers.tokenizer import Tokenizer
+
+
 from allennlp.predictors import *
 
 import glob
@@ -51,7 +57,7 @@ class TextReader(DatasetReader):
         super().__init__(**kwargs)
         self.data_root = data_root
         self.tokenizer_in = tokenizer_in or CharacterTokenizer(start_tokens=[START_TOKEN])
-        self.tokenizer_out = tokenizer_out or CharacterTokenizer()
+        self.tokenizer_out = tokenizer_out or LowerCharacterTokenizer()
         self.token_indexers_in = {"tokens": token_indexer_in or SingleIdTokenIndexer('tokens')}
         self.token_indexers_out = {"labels": token_indexer_in or SingleIdTokenIndexer('labels')}
         self.max_tokens = max_tokens
@@ -63,7 +69,7 @@ class TextReader(DatasetReader):
         tokens_in = self.tokenizer_in.tokenize(text)
         if self.truncate_last_in:
             tokens_in = tokens_in[:-1]
-        tokens_out = self.tokenizer_out.tokenize(text.lower())
+        tokens_out = self.tokenizer_out.tokenize(text)
         if self.max_tokens:
             tokens_in = tokens_in[: self.max_tokens]
             tokens_out = tokens_out[: self.max_tokens]
@@ -283,3 +289,49 @@ class MyCategoricalAccuracy(Metric):
     def reset(self):
         self.correct_count = 0.0
         self.total_count = 0.0
+
+
+# This class fixes the expected behavior that calling .lower()
+# on a string in Python does not preserve string length
+@Tokenizer.register("lower_character")
+class LowerCharacterTokenizer(Tokenizer):
+
+    def __init__(
+        self,
+        byte_encoding: str = None,
+        start_tokens: List[Union[str, int]] = None,
+        end_tokens: List[Union[str, int]] = None,
+    ) -> None:
+        self._byte_encoding = byte_encoding
+        self._start_tokens = start_tokens or []
+        # We reverse the tokens here because we're going to insert them with `insert(0)` later;
+        # this makes sure they show up in the right order.
+        self._start_tokens.reverse()
+        self._end_tokens = end_tokens or []
+
+    @overrides
+    def tokenize(self, text: str) -> List[Token]:
+        if self._byte_encoding is not None:
+            # We add 1 here so that we can still use 0 for masking, no matter what bytes we get out
+            # of this.
+            tokens = [Token(text_id=c + 1) for c in text.lower().encode(self._byte_encoding)]
+        else:
+            tokens = [Token(t.lower()[0]) for t in list(text)]
+        for start_token in self._start_tokens:
+            if isinstance(start_token, int):
+                token = Token(text_id=start_token, idx=0)
+            else:
+                token = Token(text=start_token, idx=0)
+            tokens.insert(0, token)
+        for end_token in self._end_tokens:
+            if isinstance(end_token, int):
+                token = Token(text_id=end_token, idx=0)
+            else:
+                token = Token(text=end_token, idx=0)
+            tokens.append(token)
+        return tokens
+
+    def __eq__(self, other) -> bool:
+        if isinstance(self, other.__class__):
+            return self.__dict__ == other.__dict__
+        return NotImplemented
