@@ -33,7 +33,7 @@ print('Torch cuda available:', torch.cuda.is_available())
 class LMModel:
     def __init__(self, model_path, batch_size=2048):
         self.vocab = Vocabulary.from_files(os.path.join(model_path, 'vocabulary'))
-        cuda_device = 1 if torch.cuda.is_available() else -1
+        cuda_device = 0 if torch.cuda.is_available() else -1
         with open(os.path.join(model_path, 'config.json')) as config_file:
             config = Params(json.load(config_file))
         self.model = Model.load(config, model_path, cuda_device=cuda_device)
