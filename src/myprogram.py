@@ -22,7 +22,7 @@ import torch
 
 from PrefixTrie import PrefixTrie
 
-USE_PREFIX_MATCH = True
+USE_PREFIX_MATCH = False
 CONF_THRESHOLD = 0.4
 
 print(f"Took {time.time() - import_start} to import", file=sys.stderr)
@@ -121,17 +121,9 @@ class Ensemble:
         self.lm_model.flush()
 
         lm_model_confidence = self.lm_model.get_avg_conf()
-        if lm_model_confidence < CONF_THRESHOLD:
-            # LSTM has low confidence, switch to ngram model
-            print('LSTM is not confident,', lm_model_confidence, file=sys.stderr)
-            ngram_pred = SimpleNgramModel.train_and_test(data, most_common)
-            for idx in unknown_indices:
-                preds[idx] = ngram_pred[idx]
-        else:
-            # LSTM is confident
-            print('LSTM is confident,', lm_model_confidence, file=sys.stderr)
-            for idx, ans in self.lm_model.results:
-                preds[idx] = ans
+        print('LSTM confidence:', lm_model_confidence, file=sys.stderr)
+        for idx, ans in self.lm_model.results:
+            preds[idx] = ans
 
         return preds
 
