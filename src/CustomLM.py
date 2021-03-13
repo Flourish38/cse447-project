@@ -135,7 +135,6 @@ class CustomLM(Model):
                 self.accuracy(probs, labels, mask)
 
         return output
-        # return probs
 
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:
         return {"perplexity": self.perplexity.get_metric(reset), "accuracy": self.accuracy.get_metric(reset)}
