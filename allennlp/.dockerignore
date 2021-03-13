@@ -1,8 +1,0 @@
-.dockerignore
-**.pyc
-**/__pycache__
-.gitignore
-.git
-.coverage
-.benchmarks
-.mypy_cache
