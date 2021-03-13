@@ -1,5 +1,8 @@
 #!/usr/bin/env python
+import time
+import_start = time.time()
 import os
+import sys
 from SimpleNgramModel import SimpleNgramModel
 import string
 import random
@@ -22,13 +25,15 @@ from PrefixTrie import PrefixTrie
 USE_PREFIX_MATCH = True
 CONF_THRESHOLD = 0.4
 
+print(f"Took {time.time() - import_start} to import", file=sys.stderr)
+
 print('Torch cuda available:', torch.cuda.is_available())
 
 
 class LMModel:
-    def __init__(self, model_path, batch_size=64):
+    def __init__(self, model_path, batch_size=2048):
         self.vocab = Vocabulary.from_files(os.path.join(model_path, 'vocabulary'))
-        cuda_device = 0 if torch.cuda.is_available() else -1
+        cuda_device = 1 if torch.cuda.is_available() else -1
         with open(os.path.join(model_path, 'config.json')) as config_file:
             config = Params(json.load(config_file))
         self.model = Model.load(config, model_path, cuda_device=cuda_device)
@@ -118,13 +123,13 @@ class Ensemble:
         lm_model_confidence = self.lm_model.get_avg_conf()
         if lm_model_confidence < CONF_THRESHOLD:
             # LSTM has low confidence, switch to ngram model
-            print('LSTM is not confident,', lm_model_confidence)
+            print('LSTM is not confident,', lm_model_confidence, file=sys.stderr)
             ngram_pred = SimpleNgramModel.train_and_test(data, most_common)
             for idx in unknown_indices:
                 preds[idx] = ngram_pred[idx]
         else:
             # LSTM is confident
-            print('LSTM is confident,', lm_model_confidence)
+            print('LSTM is confident,', lm_model_confidence, file=sys.stderr)
             for idx, ans in self.lm_model.results:
                 preds[idx] = ans
 
@@ -165,11 +170,15 @@ if __name__ == '__main__':
         model.save(args.work_dir)
     elif args.mode == 'test':
         print('Loading model')
+        load_start = time.time()
         model = Ensemble.load(args.work_dir)
+        print(f"Took {time.time() - load_start} to load model")
         print('Loading test data from {}'.format(args.test_data))
         test_data = Ensemble.load_test_data(args.test_data)
         print('Making predictions')
+        pred_start = time.time()
         pred = model.run_pred(test_data)
+        print(f"Took {time.time() - pred_start} to predict all")
         print('Writing predictions to {}'.format(args.test_output))
         assert len(pred) == len(test_data), 'Expected {} predictions but got {}'.format(
             len(test_data), len(pred))
